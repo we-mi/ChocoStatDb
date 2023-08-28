@@ -103,7 +103,7 @@ function Get-ChocoStatComputer {
 
         $FullSQLQuery = $Query -join ''
 
-        Write-Verbose "Get-ChocoStatComputer: Execute SQL Query: $Query"
+        Write-Debug "Get-ChocoStatComputer: Execute SQL Query: $FullSQLQuery"
 
         $result = Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}
 
