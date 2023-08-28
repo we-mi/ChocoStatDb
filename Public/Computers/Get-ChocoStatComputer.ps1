@@ -45,7 +45,7 @@ function Get-ChocoStatComputer {
             ParameterSetName = "ComputerName",
             ValueFromPipelineByPropertyName
         )]
-        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
+        [ValidateScript( { $_ -match $Regex.PackageNameSQLWildcard } ) ]
         [String[]]
         $ComputerName,
 
