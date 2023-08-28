@@ -62,10 +62,21 @@ function Get-ChocoStatComputer {
         # Should the search include source information for computers?
         [Parameter()]
         [switch]
-        $Sources
+        $Sources,
+
+        # Path to the SQLite-Database. Leave empty to let `Get-ChocoStatDBFile` search for it automatically
+        [Parameter()]
+        [System.IO.FileInfo]
+        $Database
     )
 
     begin {
+        if (-not $PSBoundParameters.ContainsKey("Database")) {
+            $DbFile = Get-ChocoStatDBFile
+        } else {
+            $DbFile = $Database
+        }
+
         $Query = [System.Collections.ArrayList]@()
         $null = $Query.Add("SELECT ComputerID,ComputerName,LastContact FROM Computers")
     }
