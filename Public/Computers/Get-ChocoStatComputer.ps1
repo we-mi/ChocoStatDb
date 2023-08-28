@@ -66,46 +66,57 @@ function Get-ChocoStatComputer {
     )
 
     begin {
-        $DbFile = Get-ChocoStatDBFile
-        $Query = "SELECT * FROM Computers"
+        $Query = [System.Collections.ArrayList]@()
+        $null = $Query.Add("SELECT ComputerID,ComputerName,LastContact FROM Computers")
     }
 
     process {
 
-        $QueryFilters = @()
-        if ($ComputerID) {
-            $QueryFilters += $ComputerID | ForEach-Object { "ComputerID = $_" }
-        } elseif ($ComputerName) {
-            $QueryFilters += $ComputerName | ForEach-Object { "ComputerName LIKE '$_'" }
+        $QueryFilters = [System.Collections.ArrayList]@()
+
+        foreach ($singleComputerID in $ComputerID) {
+            $null = $QueryFilters.Add( "ComputerID = $singleComputerID" )
+        }
+
+        foreach ($singleComputerName in $ComputerName) {
+            $null = $QueryFilters.Add( "ComputerName LIKE '$singleComputerName'" )
         }
     }
 
     end {
         if ($QueryFilters.Count -gt 0) {
-            $Query += " WHERE "
-            $Query += $QueryFilters -join ' OR '
+            $null = $Query.Add(" WHERE ")
+            $null = $Query.Add($QueryFilters -join ' OR ')
         }
-        $Query += ";"
+        $null = $Query.Add(";")
+
+        $FullSQLQuery = $Query -join ''
 
         Write-Verbose "Get-ChocoStatComputer: Execute SQL Query: $Query"
 
-        $result = Invoke-SqliteQuery -Query $Query -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}
+        $result = Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}
 
         if ($Packages.IsPresent) {
+            $ComputerPackages = Get-ChocoStatComputerPackage -ComputerID $result.ComputerID
+
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name Packages -Value (Get-ChocoStatComputerPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,InstalledOn)
+                $computer | Add-Member -MemberType NoteProperty -Name Packages -Value ($ComputerPackages | Where-Object { $_.ComputerID -eq $computer.ComputerID } | Select-Object PackageName,Version,InstalledOn)
             }
         }
 
         if ($FailedPackages.IsPresent) {
+            $ComputerPackages = Get-ChocoStatComputerFailedPackage -ComputerID $result.ComputerID
+
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name FailedPackages -Value (Get-ChocoStatComputerFailedPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,FailedOn)
+                $computer | Add-Member -MemberType NoteProperty -Name FailedPackages -Value ($ComputerPackages | Where-Object { $_.ComputerID -eq $computer.ComputerID } | Select-Object PackageName,Version,FailedOn)
             }
         }
 
         if ($Sources.IsPresent) {
+            $ComputerSources = Get-ChocoStatComputerSource -ComputerID $result.ComputerID
+
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name Sources -Value (Get-ChocoStatComputerSource -ComputerID $computer.ComputerID | Select-Object SourceName,SourceURL,Enabled,Priority,ByPassProxy,SelfService,AdminOnly)
+                $computer | Add-Member -MemberType NoteProperty -Name Sources -Value ($ComputerSources | Where-Object { $_.ComputerID -eq $computer.ComputerID } | Select-Object SourceName,SourceURL,Enabled,Priority,ByPassProxy,SelfService,AdminOnly)
             }
         }
 
