@@ -137,6 +137,10 @@ function Get-ChocoStatComputer {
             }
         }
 
-        return $result
+        if ($result.Count -eq 1) {
+            return ,@($result)
+        } else {
+            return $result
+        }
     }
 }
