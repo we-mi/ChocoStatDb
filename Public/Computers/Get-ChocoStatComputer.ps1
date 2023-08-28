@@ -1,11 +1,13 @@
 function Get-ChocoStatComputer {
     <#
     .SYNOPSIS
-        Lists computers in the database depending on the filters
+        Lists computers in the ChocoStat-Database
     .DESCRIPTION
-        Lists computers in the database including packages and sources
+        Lists computers in the ChocoStat-Database depending on the filters. You can include packages, failed packages and sources which are attached to this computer
     .NOTES
-        The output can be filtered by one or more ComputerIDs _OR_ one or more ComputerNames which might contain SQL-Wildcards
+        The output can be filtered by one or more ComputerIDs *OR* one or more ComputerNames which might contain SQL-Wildcards
+    .LINK
+        https://github.com/we-mi/ChocoStatDb/blob/main/docs/Get-ChocoStatComputer.md
     .EXAMPLE
         Get-ChocoStatComputer
 
@@ -21,11 +23,15 @@ function Get-ChocoStatComputer {
     .EXAMPLE
         Get-ChocoStatComputer -ComputerName '%.example.org'
 
-        Lists all computers which ends with .example.org
+        Lists all computers which ends with `.example.org`
     .EXAMPLE
         Get-ChocoStatComputer -ComputerName '%.example.org','%foo%'
 
-        Lists all computers which ends with ".example.org" or which contains the word foo
+        Lists all computers which ends with `.example.org` or which contains the word `foo`
+    .EXAMPLE
+        Get-ChocoStatComputer -ComputerName '%.example.org' -Packages -FailedPackages -Sources
+
+        Lists all computers which ends with `.example.org` and also shows attached packages, failed packages and sources for these computers
     #>
 
     [CmdletBinding(DefaultParameterSetName="ComputerName")]
