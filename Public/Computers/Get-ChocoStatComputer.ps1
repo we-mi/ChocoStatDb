@@ -84,7 +84,7 @@ function Get-ChocoStatComputer {
         }
 
         $Query = [System.Collections.ArrayList]@()
-        $null = $Query.Add("SELECT ComputerID,ComputerName,LastContact FROM Computers")
+        $null = $Query.Add("SELECT Computers.ComputerID,Computers.ComputerName,Computers.LastContact FROM Computers")
     }
 
     process {
@@ -105,35 +105,43 @@ function Get-ChocoStatComputer {
             $null = $Query.Add(" WHERE ")
             $null = $Query.Add($QueryFilters -join ' OR ')
         }
+
         $null = $Query.Add(";")
 
         $FullSQLQuery = $Query -join ''
 
         Write-Debug "Get-ChocoStatComputer: Execute SQL Query: $FullSQLQuery"
 
-        $result = Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}
+        $result = [System.Collections.ArrayList]::new()
+        $result.AddRange( (Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}) )
 
         if ($Packages.IsPresent) {
-            $ComputerPackages = Get-ChocoStatComputerPackage -ComputerID $result.ComputerID
+            $ComputerPackages = [System.Collections.ArrayList]::new()
+            $ComputerPackages.AddRange( (Get-ChocoStatComputerPackage -ComputerID $result.ComputerID) )
 
+            $result | Add-Member -MemberType NoteProperty -Name Packages -Value $null
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name Packages -Value ($ComputerPackages | Where-Object { $_.ComputerID -eq $computer.ComputerID } | Select-Object PackageName,Version,InstalledOn)
+                $computer.Packages = $ComputerPackages.Where( { $_.ComputerID -eq $computer.ComputerID } ) | Select-Object PackageName,Version,InstalledOn
             }
         }
 
         if ($FailedPackages.IsPresent) {
-            $ComputerPackages = Get-ChocoStatComputerFailedPackage -ComputerID $result.ComputerID
+            $ComputerFailedPackages = [System.Collections.ArrayList]::new()
+            $ComputerFailedPackages.AddRange( (Get-ChocoStatComputerFailedPackage -ComputerID $result.ComputerID) )
 
+            $result | Add-Member -MemberType NoteProperty -Name FailedPackages -Value $null
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name FailedPackages -Value ($ComputerPackages | Where-Object { $_.ComputerID -eq $computer.ComputerID } | Select-Object PackageName,Version,FailedOn)
+                $computer.FailedPackages = $ComputerFailedPackages.Where( { $_.ComputerID -eq $computer.ComputerID } ) | Select-Object PackageName,Version,FailedOn
             }
         }
 
         if ($Sources.IsPresent) {
-            $ComputerSources = Get-ChocoStatComputerSource -ComputerID $result.ComputerID
+            $ComputerSources = [System.Collections.ArrayList]::new()
+            $ComputerSources.AddRange( (Get-ChocoStatComputerSource -ComputerID $result.ComputerID) )
 
+            $result | Add-Member -MemberType NoteProperty -Name Sources -Value $null
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name Sources -Value ($ComputerSources | Where-Object { $_.ComputerID -eq $computer.ComputerID } | Select-Object SourceName,SourceURL,Enabled,Priority,ByPassProxy,SelfService,AdminOnly)
+                $computer.Sources = $ComputerSources.Where( { $_.ComputerID -eq $computer.ComputerID } ) | Select-Object SourceName,SourceURL,Enabled,Priority,ByPassProxy,SelfService,AdminOnly
             }
         }
 
