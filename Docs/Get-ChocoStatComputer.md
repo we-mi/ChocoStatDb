@@ -175,6 +175,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ### System.Object[]
 ## NOTES
 The output can be filtered by one or more ComputerIDs *OR* one or more ComputerNames which might contain SQL-Wildcards
+Adding Packages, FailedPackages and Sources to a lot of computers can be *extremely* slow
 
 ## RELATED LINKS
 
