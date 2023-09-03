@@ -6,6 +6,7 @@ function Get-ChocoStatComputer {
         Lists computers in the ChocoStat-Database depending on the filters. You can include packages, failed packages and sources which are attached to this computer
     .NOTES
         The output can be filtered by one or more ComputerIDs *OR* one or more ComputerNames which might contain SQL-Wildcards
+        Adding Packages, FailedPackages and Sources to a lot of computers can be *extremely* slow
     .LINK
         https://github.com/we-mi/ChocoStatDb/blob/main/docs/Get-ChocoStatComputer.md
     .EXAMPLE
@@ -113,11 +114,15 @@ function Get-ChocoStatComputer {
         Write-Debug "Get-ChocoStatComputer: Execute SQL Query: $FullSQLQuery"
 
         $result = [System.Collections.ArrayList]::new()
-        $result.AddRange( (Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}) )
+        try {
+            $result.AddRange( [array](Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}) )
+        } catch [System.ArgumentNullException] { <# this is fine #> }
 
         if ($Packages.IsPresent) {
             $ComputerPackages = [System.Collections.ArrayList]::new()
-            $ComputerPackages.AddRange( (Get-ChocoStatComputerPackage -ComputerID $result.ComputerID) )
+            try {
+                $ComputerPackages.AddRange( [array](Get-ChocoStatComputerPackage -ComputerID $result.ComputerID) )
+            } catch [System.ArgumentNullException] { <# this is fine #> }
 
             $result | Add-Member -MemberType NoteProperty -Name Packages -Value $null
             foreach ($computer in $result) {
@@ -127,7 +132,9 @@ function Get-ChocoStatComputer {
 
         if ($FailedPackages.IsPresent) {
             $ComputerFailedPackages = [System.Collections.ArrayList]::new()
-            $ComputerFailedPackages.AddRange( (Get-ChocoStatComputerFailedPackage -ComputerID $result.ComputerID) )
+            try {
+                $ComputerFailedPackages.AddRange( [array](Get-ChocoStatComputerFailedPackage -ComputerID $result.ComputerID) )
+            } catch [System.ArgumentNullException] { <# this is fine #> }
 
             $result | Add-Member -MemberType NoteProperty -Name FailedPackages -Value $null
             foreach ($computer in $result) {
@@ -137,7 +144,9 @@ function Get-ChocoStatComputer {
 
         if ($Sources.IsPresent) {
             $ComputerSources = [System.Collections.ArrayList]::new()
-            $ComputerSources.AddRange( (Get-ChocoStatComputerSource -ComputerID $result.ComputerID) )
+            try {
+                $ComputerSources.AddRange( [array](Get-ChocoStatComputerSource -ComputerID $result.ComputerID) )
+            } catch [System.ArgumentNullException] { <# this is fine #> }
 
             $result | Add-Member -MemberType NoteProperty -Name Sources -Value $null
             foreach ($computer in $result) {
